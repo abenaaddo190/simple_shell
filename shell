@@ -50,3 +50,13 @@ int main(void)
             printf(PROMPT);
         }
     }
+
+    /* handle end of file condition */
+    if (read == -1)
+    {
+        printf("\n");
+        exit(EXIT_SUCCESS);
+    }
+
+    return (0);
+}
