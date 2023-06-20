@@ -4,6 +4,8 @@
 #include <string.h>
 #define BUFFER_SIZE 1024
 
+extern char **environ;
+
 char *strdup(const char *s) /* a custom strdup function */
 {
     char *dup;
