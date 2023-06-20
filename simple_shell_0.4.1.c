@@ -177,5 +177,3 @@ int main(void)
     free(argv); // free the argv array
     return (0);
 }
-Copy
-Received message. To handle arguments for the built-in exit, I need to
