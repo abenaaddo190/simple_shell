@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <string.h>
 #define BUFFER_SIZE 1024
 
 ssize_t _getline(char **lineptr, size_t *n, FILE *stream)
@@ -59,27 +60,27 @@ ssize_t _getline(char **lineptr, size_t *n, FILE *stream)
 
 int main(void)
 {
-    char buffer[MAX_LEN];
+    char *buffer;
+    size_t n;
+    ssize_t len;
     char *argv[2];
     int status;
-    char *full_path;
+
+    buffer = NULL; /* initialize buffer to NULL */
+    n = 0; /* initialize n to 0 */
 
     while (1)
     {
         printf("$ "); /* display prompt */
-        if (fgets(buffer, MAX_LEN, stdin) == NULL) /* read command */
+        len = _getline(&buffer, &n, stdin); /* read command using _getline function */
+        if (len == -1) /* handle end of file or error */
         {
-            printf("\n"); /* handle end of file */
+            printf("\n");
             break;
         }
         buffer[strcspn(buffer, "\n")] = '\0'; /* remove newline */
-        if (strcmp(buffer, "exit") == 0) /* exit built-in */ 
-            break; 
-        if (strcmp(buffer, "env") == 0) // This is the added code
-        {
-            print_env(); // This is the added code
-            continue; // This is the added code
-        }
+        if (strcmp(buffer, "exit") == 0) /* exit command */
+            break;
         argv[0] = buffer; /* set arguments for execve */
         argv[1] = NULL;
         status = fork(); /* create child process */
@@ -90,23 +91,17 @@ int main(void)
         }
         if (status == 0) /* child process */
         {
-            full_path = find_path(buffer); /* find the full path of the executable */
-            if (full_path == NULL) /* executable not found in PATH */
+            if (execve(buffer, argv, NULL) == -1) /* execute command */
             {
-                perror(buffer);
+                perror(buffer); /* command not found */
                 exit(1);
             }
-            if (execve(full_path, argv, environ) == -1) // This is the modified code
-            {
-                perror(buffer);
-                exit(1);
-            }
-            free(full_path); /* free the full path */
         }
         else /* parent process */
         {
             wait(NULL); /* wait for child to finish */
         }
     }
+    free(buffer); /* free the buffer allocated by _getline function*/
     return (0);
 }
