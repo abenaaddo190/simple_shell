@@ -56,3 +56,57 @@ ssize_t _getline(char **lineptr, size_t *n, FILE *stream)
         }
     }
 }
+
+int main(void)
+{
+    char buffer[MAX_LEN];
+    char *argv[2];
+    int status;
+    char *full_path;
+
+    while (1)
+    {
+        printf("$ "); /* display prompt */
+        if (fgets(buffer, MAX_LEN, stdin) == NULL) /* read command */
+        {
+            printf("\n"); /* handle end of file */
+            break;
+        }
+        buffer[strcspn(buffer, "\n")] = '\0'; /* remove newline */
+        if (strcmp(buffer, "exit") == 0) /* exit built-in */ 
+            break; 
+        if (strcmp(buffer, "env") == 0) // This is the added code
+        {
+            print_env(); // This is the added code
+            continue; // This is the added code
+        }
+        argv[0] = buffer; /* set arguments for execve */
+        argv[1] = NULL;
+        status = fork(); /* create child process */
+        if (status == -1) /* fork error */
+        {
+            perror("fork");
+            exit(1);
+        }
+        if (status == 0) /* child process */
+        {
+            full_path = find_path(buffer); /* find the full path of the executable */
+            if (full_path == NULL) /* executable not found in PATH */
+            {
+                perror(buffer);
+                exit(1);
+            }
+            if (execve(full_path, argv, environ) == -1) // This is the modified code
+            {
+                perror(buffer);
+                exit(1);
+            }
+            free(full_path); /* free the full path */
+        }
+        else /* parent process */
+        {
+            wait(NULL); /* wait for child to finish */
+        }
+    }
+    return (0);
+}
