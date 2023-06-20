@@ -1,54 +1,53 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
-#include <sys/types.h>
-#include <sys/wait.h>
 #include <string.h>
+#include <sys/wait.h>
 
-#define MAX_COMMAND_LENGTH 100
+#define BUFSIZE 1024
+#define PROMPT "$ "
 
-int main() {
-    char command[MAX_COMMAND_LENGTH];
+int main(void)
+{
+    char *line; /* the input line */
+    char *cmd; /* the command to execute */
+    size_t len = 0; /* the length of the input line */
+    ssize_t read; /* the number of bytes read */
+    pid_t pid; /* the process id */
+    int status; /* the exit status */
 
-    while (1) {
-        printf("$ ");
-        fflush(stdout);  // Flush the output buffer
+    /* print the prompt and wait for input */
+    printf(PROMPT);
+    while ((read = getline(&line, &len, stdin)) != -1)
+    {
+        /* remove the newline character */
+        line[read - 1] = '\0';
 
-        if (fgets(command, sizeof(command), stdin) == NULL) {
-            // Handle end of file (Ctrl+D)
-            printf("\nShell exited.\n");
-            break;
+        /* fork a child process */
+        pid = fork();
+        if (pid == -1)
+        {
+            perror("fork");
+            exit(EXIT_FAILURE);
         }
 
-        // Remove the trailing newline character from the command
-        command[strcspn(command, "\n")] = '\0';
-
-        pid_t pid = fork();
-        if (pid < 0) {
-            perror("Failed to create child process");
-            continue;
-        }
-
-        if (pid == 0) {
-            // Child process
-            execlp(command, command, (char *)NULL);  // Execute the command
-
-            // If execlp returns, it means the command was not found
-            fprintf(stderr, "Command not found: %s\n", command);
-            exit(1);
-        } else {
-            // Parent process
-            int status;
-            waitpid(pid, &status, 0);  // Wait for the child process to finish
-
-            if (WIFEXITED(status)) {
-                int exit_status = WEXITSTATUS(status);
-                if (exit_status != 0) {
-                    fprintf(stderr, "Command failed with exit code %d\n", exit_status);
-                }
+        if (pid == 0) /* child process */
+        {
+            /* execute the command */
+            cmd = line;
+            if (execve(cmd, NULL, NULL) == -1)
+            {
+                perror(cmd);
+                exit(EXIT_FAILURE);
             }
         }
-    }
+        else /* parent process */
+        {
+            /* wait for the child to terminate */
+            wait(&status);
 
-    return 0;
+            /* print the prompt and wait for input again */
+            printf(PROMPT);
+        }
+    }
 }
