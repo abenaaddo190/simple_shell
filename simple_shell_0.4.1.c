@@ -102,6 +102,53 @@ void print_env(void)
     }
 }
 
+int _setenv(const char *name, const char *value)
+{
+   int i;
+   int len;
+   char *var;
+
+   if (name == NULL || value == NULL || name[0] == '\0') /* check for invalid arguments */
+       return (-1);
+   len = strlen(name) + strlen(value) + 2; /* get the length of the variable */
+   var = malloc(len); /* allocate memory for the variable */
+   if (var == NULL) /* check for allocation error */
+       return (-1);
+   sprintf(var, "%s=%s", name, value); /* format the variable as name=value */
+   for (i = 0; environ[i] != NULL; i++) /* loop through environ array */
+   {
+       if (strncmp(environ[i], name, strlen(name)) == 0) /* check if name matches */
+       {
+           environ[i] = var; /* replace the variable */
+           return (0); /* return success */
+       }
+   }
+   environ[i] = var; /* append the variable to the end of the array */
+   return (0); /* return success */
+}
+
+int _unsetenv(const char *name)
+{
+    int i;
+    int j;
+
+    if (name == NULL || name[0] == '\0') /* check for invalid arguments */
+        return (-1);
+    for (i = 0; environ[i] != NULL; i++) /* loop through environ array */
+    {
+        if (strncmp(environ[i], name, strlen(name)) == 0) /* check if name matches */
+        {
+            free(environ[i]); /* free the variable */
+            for (j = i; environ[j] != NULL; j++) /* loop from the matched index */
+            {
+                environ[j] = environ[j + 1]; /* shift the variables to the left */
+            }
+            i--; /* decrement i to check the next variable */
+        }
+    }
+    return (0); /* return success */
+}
+
 ssize_t _getline(char **lineptr, size_t *n, FILE *stream)
 {
     static char buffer[BUFFER_SIZE]; /* declare a static buffer */
@@ -198,6 +245,18 @@ int main(void)
         if (strcmp(argv[0], "env") == 0) // This is the added code
         {
             print_env(); // This is the added code
+            continue; // This is the added code
+        }
+        if (strcmp(argv[0], "setenv") == 0) // This is the added code
+        {
+            if (_setenv(argv[1], argv[2]) == -1) // This is the added code
+                fprintf(stderr, "Error: setenv failed\n"); // This is the added code
+            continue; // This is the added code
+        }
+        if (strcmp(argv[0], "unsetenv") == 0) // This is the added code
+        {
+            if (_unsetenv(argv[1]) == -1) // This is the added code
+                fprintf(stderr, "Error: unsetenv failed\n"); // This is the added code
             continue; // This is the added code
         }
         
